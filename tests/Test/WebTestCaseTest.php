@@ -215,7 +215,7 @@ class WebTestCaseTest extends WebTestCase
     /**
      * Use nelmio/alice.
      */
-    public function testLoadFixturesFiles(): void
+    public function testLoadFixturesFiles(): array
     {
         $fixtures = $this->loadFixtureFiles([
             '@AcmeBundle/DataFixtures/ORM/user.yml',
@@ -258,6 +258,8 @@ class WebTestCaseTest extends WebTestCase
         $this->assertTrue(
             $user->getEnabled()
         );
+
+        return $fixtures;
     }
 
     /**
@@ -279,6 +281,22 @@ class WebTestCaseTest extends WebTestCase
      */
     public function testLoadFixturesFilesWithPurgeModeTruncate(): void
     {
+        // Load initial fixtures
+        $this->testLoadFixturesFiles();
+
+        $em = $this->getContainer()
+            ->get('doctrine.orm.entity_manager');
+
+        $users = $em->getRepository('LiipAcme:User')
+            ->findAll();
+
+        // There are 10 users in the database
+        $this->assertSame(
+            10,
+            count($users)
+        );
+
+        // Load fixtures with append = true
         $fixtures = $this->loadFixtureFiles([
             '@AcmeBundle/DataFixtures/ORM/user.yml',
         ], true, null, 'doctrine', ORMPurger::PURGE_MODE_TRUNCATE);
@@ -291,7 +309,17 @@ class WebTestCaseTest extends WebTestCase
             $fixtures
         );
 
-        $id = 1;
+        $users = $em->getRepository('LiipAcme:User')
+            ->findAll();
+
+        // There are only 10 users in the database
+        $this->assertSame(
+            10,
+            count($users)
+        );
+
+        // Auto-increment hasn't been altered, so ids start from 11
+        $id = 11;
         /** @var \Liip\Acme\Tests\App\Entity\User $user */
         foreach ($fixtures as $user) {
             $this->assertSame($id++, $user->getId());
