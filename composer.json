@@ -30,7 +30,8 @@
         "symfony/monolog-bundle": "^3.2",
         "symfony/phpunit-bridge": "^3.4 || ^4.1",
         "symfony/symfony": "^3.4 || ^4.1",
-        "theofidry/alice-data-fixtures": "^1.0.1"
+        "theofidry/alice-data-fixtures": "^1.0.1",
+        "zalas/phpunit-injector": "^1.3"
     },
     "suggest": {
         "doctrine/dbal": "Required when using the fixture loading functionality with an ORM and SQLite",

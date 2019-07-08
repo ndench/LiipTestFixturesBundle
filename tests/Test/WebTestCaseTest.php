@@ -15,21 +15,48 @@ namespace Liip\Acme\Tests\Test;
 
 use Doctrine\Common\Annotations\Annotation\IgnoreAnnotation;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
+use Doctrine\ORM\EntityManager;
 use Liip\Acme\Tests\AppConfigSqlite\AppConfigSqliteKernel;
-use Liip\TestFixturesBundle\Test\FixturesTrait;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
+use Liip\TestFixturesBundle\Services\DatabaseTools\AbstractDatabaseTool;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Zalas\Injector\PHPUnit\Symfony\TestCase\SymfonyTestContainer;
+use Zalas\Injector\PHPUnit\TestCase\ServiceContainerTestCase;
 
 /**
+ * @preserveGlobalState disabled
+ *
  * @IgnoreAnnotation("depends")
  * @IgnoreAnnotation("expectedException")
  */
-class WebTestCaseTest extends WebTestCase
+class WebTestCaseTest extends KernelTestCase implements ServiceContainerTestCase
 {
-    use FixturesTrait;
+    use SymfonyTestContainer;
+
+    /**
+     * @var EntityManager
+     * @inject doctrine
+     */
+    private $entityManager;
+
+    /**
+     * @var DatabaseToolCollection
+     * @inject liip_test_fixtures.services.database_tool_collection
+     */
+    private $databaseToolCollection;
+
+    /**
+     * @var AbstractDatabaseTool
+     */
+    private $databaseTool;
 
     public function setUp(): void
     {
-        static::$class = AppConfigSqliteKernel::class;
+        parent::setUp();
+
+        $this->assertInstanceOf(DatabaseToolCollection::class, $this->databaseToolCollection);
+
+        $this->databaseTool = $this->databaseToolCollection->get();
     }
 
     public static function getKernelClass()
@@ -39,7 +66,7 @@ class WebTestCaseTest extends WebTestCase
 
     public function testLoadEmptyFixtures(): void
     {
-        $fixtures = $this->loadFixtures([]);
+        $fixtures = $this->databaseTool->loadFixtures([]);
 
         $this->assertInstanceOf(
             'Doctrine\Common\DataFixtures\Executor\ORMExecutor',
@@ -49,7 +76,7 @@ class WebTestCaseTest extends WebTestCase
 
     public function testLoadFixturesWithoutParameters(): void
     {
-        $fixtures = $this->loadFixtures();
+        $fixtures = $this->databaseTool->loadFixtures();
 
         $this->assertInstanceOf(
             'Doctrine\Common\DataFixtures\Executor\ORMExecutor',
@@ -59,7 +86,7 @@ class WebTestCaseTest extends WebTestCase
 
     public function testLoadFixtures(): void
     {
-        $fixtures = $this->loadFixtures([
+        $fixtures = $this->databaseTool->loadFixtures([
             'Liip\Acme\Tests\App\DataFixtures\ORM\LoadUserData',
         ]);
 
@@ -84,10 +111,7 @@ class WebTestCaseTest extends WebTestCase
         $this->assertTrue($user1->getEnabled());
 
         // Load data from database
-        $em = $this->getContainer()
-            ->get('doctrine.orm.entity_manager');
-
-        $users = $em->getRepository('LiipAcme:User')
+        $users = $this->entityManager->getRepository('LiipAcme:User')
             ->findAll();
 
         // There are 2 users.
@@ -97,7 +121,7 @@ class WebTestCaseTest extends WebTestCase
         );
 
         /** @var \Liip\Acme\Tests\App\Entity\User $user */
-        $user = $em->getRepository('LiipAcme:User')
+        $user = $this->entityManager->getRepository('LiipAcme:User')
             ->findOneBy([
                 'id' => 1,
             ]);
@@ -114,21 +138,18 @@ class WebTestCaseTest extends WebTestCase
 
     public function testAppendFixtures(): void
     {
-        $this->loadFixtures([
+        $this->databaseTool->loadFixtures([
             'Liip\Acme\Tests\App\DataFixtures\ORM\LoadUserData',
         ]);
 
-        $this->loadFixtures(
+        $this->databaseTool->loadFixtures(
             ['Liip\Acme\Tests\App\DataFixtures\ORM\LoadSecondUserData'],
             true
         );
 
         // Load data from database
-        $em = $this->getContainer()
-            ->get('doctrine.orm.entity_manager');
-
         /** @var \Liip\Acme\Tests\App\Entity\User $user */
-        $user = $em->getRepository('LiipAcme:User')
+        $user = $this->entityManager->getRepository('LiipAcme:User')
             ->findOneBy([
                 'id' => 1,
             ]);
@@ -143,7 +164,7 @@ class WebTestCaseTest extends WebTestCase
         );
 
         /** @var \Liip\Acme\Tests\App\Entity\User $user */
-        $user = $em->getRepository('LiipAcme:User')
+        $user = $this->entityManager->getRepository('LiipAcme:User')
             ->findOneBy([
                 'id' => 3,
             ]);
@@ -163,7 +184,7 @@ class WebTestCaseTest extends WebTestCase
      */
     public function testLoadDependentFixtures(): void
     {
-        $fixtures = $this->loadFixtures([
+        $fixtures = $this->databaseTool->loadFixtures([
             'Liip\Acme\Tests\App\DataFixtures\ORM\LoadDependentUserData',
         ]);
 
@@ -172,10 +193,7 @@ class WebTestCaseTest extends WebTestCase
             $fixtures
         );
 
-        $em = $this->getContainer()
-            ->get('doctrine.orm.entity_manager');
-
-        $users = $em->getRepository('LiipAcme:User')
+        $users = $this->entityManager->getRepository('LiipAcme:User')
             ->findAll();
 
         // The two files with fixtures have been loaded, there are 4 users.
@@ -190,7 +208,7 @@ class WebTestCaseTest extends WebTestCase
      */
     public function testLoadDependentFixturesWithDependencyInjected(): void
     {
-        $fixtures = $this->loadFixtures([
+        $fixtures = $this->databaseTool->loadFixtures([
             'Liip\Acme\Tests\App\DataFixtures\ORM\LoadDependentUserWithServiceData',
         ]);
 
@@ -199,10 +217,7 @@ class WebTestCaseTest extends WebTestCase
             $fixtures
         );
 
-        $em = $this->getContainer()
-            ->get('doctrine.orm.entity_manager');
-
-        $users = $em->getRepository('LiipAcme:User')
+        $users = $this->entityManager->getRepository('LiipAcme:User')
             ->findAll();
 
         // The two files with fixtures have been loaded, there are 4 users.
@@ -217,7 +232,7 @@ class WebTestCaseTest extends WebTestCase
      */
     public function testLoadFixturesFiles(): void
     {
-        $fixtures = $this->loadFixtureFiles([
+        $fixtures = $this->databaseTool->loadAliceFixture([
             '@AcmeBundle/DataFixtures/ORM/user.yml',
         ]);
 
@@ -229,10 +244,7 @@ class WebTestCaseTest extends WebTestCase
             $fixtures
         );
 
-        $em = $this->getContainer()
-            ->get('doctrine.orm.entity_manager');
-
-        $users = $em->getRepository('LiipAcme:User')
+        $users = $this->entityManager->getRepository('LiipAcme:User')
             ->findAll();
 
         $this->assertSame(
@@ -241,7 +253,7 @@ class WebTestCaseTest extends WebTestCase
         );
 
         /** @var \Liip\Acme\Tests\App\Entity\User $user */
-        $user = $em->getRepository('LiipAcme:User')
+        $user = $this->entityManager->getRepository('LiipAcme:User')
             ->findOneBy([
                 'id' => 1,
             ]);
@@ -250,7 +262,7 @@ class WebTestCaseTest extends WebTestCase
             $user->getEnabled()
         );
 
-        $user = $em->getRepository('LiipAcme:User')
+        $user = $this->entityManager->getRepository('LiipAcme:User')
             ->findOneBy([
                 'id' => 10,
             ]);
@@ -267,7 +279,7 @@ class WebTestCaseTest extends WebTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->loadFixtureFiles([
+        $this->databaseTool->loadAliceFixture([
             '@AcmeBundle/DataFixtures/ORM/nonexistent.yml',
         ]);
     }
@@ -279,7 +291,7 @@ class WebTestCaseTest extends WebTestCase
      */
     public function testLoadFixturesFilesWithPurgeModeTruncate(): void
     {
-        $fixtures = $this->loadFixtureFiles([
+        $fixtures = $this->databaseTool->loadAliceFixture([
             '@AcmeBundle/DataFixtures/ORM/user.yml',
         ], true, null, 'doctrine', ORMPurger::PURGE_MODE_TRUNCATE);
 
@@ -303,8 +315,8 @@ class WebTestCaseTest extends WebTestCase
      */
     public function testLoadFixturesFilesPaths(): void
     {
-        $fixtures = $this->loadFixtureFiles([
-            $this->getContainer()->get('kernel')->locateResource(
+        $fixtures = $this->databaseTool->loadAliceFixture([
+            static::$kernel->locateResource(
                 '@AcmeBundle/DataFixtures/ORM/user.yml'
             ),
         ]);
@@ -323,10 +335,7 @@ class WebTestCaseTest extends WebTestCase
         $this->assertIsString($user1->getUsername());
         $this->assertTrue($user1->getEnabled());
 
-        $em = $this->getContainer()
-            ->get('doctrine.orm.entity_manager');
-
-        $users = $em->getRepository('LiipAcme:User')
+        $users = $this->entityManager->getRepository('LiipAcme:User')
             ->findAll();
 
         $this->assertSame(
@@ -335,7 +344,7 @@ class WebTestCaseTest extends WebTestCase
         );
 
         /** @var \Liip\Acme\Tests\App\Entity\User $user */
-        $user = $em->getRepository('LiipAcme:User')
+        $user = $this->entityManager->getRepository('LiipAcme:User')
             ->findOneBy([
                 'id' => 1,
             ]);
@@ -350,7 +359,7 @@ class WebTestCaseTest extends WebTestCase
      */
     public function testLoadFixturesFilesPathsWithoutLocateResource(): void
     {
-        $fixtures = $this->loadFixtureFiles([
+        $fixtures = $this->databaseTool->loadAliceFixture([
             __DIR__.'/../App/DataFixtures/ORM/user.yml',
         ]);
 
@@ -362,10 +371,7 @@ class WebTestCaseTest extends WebTestCase
             $fixtures
         );
 
-        $em = $this->getContainer()
-            ->get('doctrine.orm.entity_manager');
-
-        $users = $em->getRepository('LiipAcme:User')
+        $users = $this->entityManager->getRepository('LiipAcme:User')
             ->findAll();
 
         $this->assertSame(
@@ -383,6 +389,6 @@ class WebTestCaseTest extends WebTestCase
 
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->loadFixtureFiles($path);
+        $this->databaseTool->loadAliceFixture($path);
     }
 }

@@ -36,7 +36,7 @@ class ExampleFunctionalTest extends WebTestCase
      */
     public function testUserFooIndex(): void
     {
-        $this->loadFixtures(['Liip\FooBundle\Tests\Fixtures\LoadUserData']);
+        $this->databaseTool->loadFixtures(['Liip\FooBundle\Tests\Fixtures\LoadUserData']);
 
         $client = $this->createClient();
         $crawler = $client->request('GET', '/users/foo');

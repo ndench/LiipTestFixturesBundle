@@ -23,6 +23,7 @@ use Symfony\Component\DependencyInjection\ResettableContainerInterface;
  * @author Lea Haensenberger
  * @author Lukas Kahwe Smith <smith@pooteeweet.org>
  * @author Benjamin Eberlei <kontakt@beberlei.de>
+ * @deprecated
  */
 trait FixturesTrait
 {
@@ -75,6 +76,8 @@ trait FixturesTrait
      *
      * Depends on the doctrine data-fixtures library being available in the
      * class path.
+     *
+     * @deprecated
      */
     protected function loadFixtures(array $classNames = [], bool $append = false, ?string $omName = null, string $registryName = 'doctrine', ?int $purgeMode = null): ?AbstractExecutor
     {
@@ -87,6 +90,9 @@ trait FixturesTrait
         return $dbTool->loadFixtures($classNames, $append);
     }
 
+    /**
+     * @deprecated
+     */
     public function loadFixtureFiles(array $paths = [], bool $append = false, ?string $omName = null, $registryName = 'doctrine', ?int $purgeMode = null)
     {
         /** @var ContainerInterface $container */

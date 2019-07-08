@@ -46,11 +46,16 @@ class ORMSqliteDatabaseTool extends ORMDatabaseTool
                 $this->om->flush();
                 $this->om->clear();
 
-                $this->webTestCase->preFixtureBackupRestore($this->om, $referenceRepository, $backupService->getBackupFilePath());
+                if (method_exists($this->webTestCase, 'preFixtureBackupRestore')) {
+                    $this->webTestCase->preFixtureBackupRestore($this->om, $referenceRepository, $backupService->getBackupFilePath());
+                }
+
                 $executor = $this->getExecutor($this->getPurger());
                 $executor->setReferenceRepository($referenceRepository);
                 $backupService->restore($executor);
-                $this->webTestCase->postFixtureBackupRestore($backupService->getBackupFilePath());
+                if (method_exists($this->webTestCase, 'postFixtureBackupRestore')) {
+                    $this->webTestCase->postFixtureBackupRestore($backupService->getBackupFilePath());
+                }
 
                 return $executor;
             }
@@ -64,7 +69,9 @@ class ORMSqliteDatabaseTool extends ORMDatabaseTool
                 $schemaTool->createSchema($this->getMetadatas());
             }
         }
-        $this->webTestCase->postFixtureSetup();
+        if (method_exists($this->webTestCase, 'postFixtureSetup')) {
+            $this->webTestCase->postFixtureSetup();
+        }
 
         $executor = $this->getExecutor($this->getPurger());
         $executor->setReferenceRepository($referenceRepository);
@@ -76,9 +83,15 @@ class ORMSqliteDatabaseTool extends ORMDatabaseTool
         $executor->execute($loader->getFixtures(), true);
 
         if ($backupService) {
-            $this->webTestCase->preReferenceSave($this->om, $executor, $backupService->getBackupFilePath());
+            if (method_exists($this->webTestCase, 'preReferenceSave')) {
+                $this->webTestCase->preReferenceSave($this->om, $executor, $backupService->getBackupFilePath());
+            }
+
             $backupService->backup($executor);
-            $this->webTestCase->postReferenceSave($this->om, $executor, $backupService->getBackupFilePath());
+
+            if (method_exists($this->webTestCase, 'preReferenceSave')) {
+                $this->webTestCase->postReferenceSave($this->om, $executor, $backupService->getBackupFilePath());
+            }
         }
 
         return $executor;
