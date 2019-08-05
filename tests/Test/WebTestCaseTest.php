@@ -21,7 +21,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
  * @IgnoreAnnotation("depends")
- * @IgnoreAnnotation("expectedException")
  */
 class WebTestCaseTest extends WebTestCase
 {

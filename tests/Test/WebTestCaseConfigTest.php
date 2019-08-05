@@ -29,10 +29,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  *
- * Avoid conflict with PHPUnit annotation when reading QueryCount
- * annotation:
- *
- * @IgnoreAnnotation("expectedException")
  */
 class WebTestCaseConfigTest extends WebTestCase
 {
