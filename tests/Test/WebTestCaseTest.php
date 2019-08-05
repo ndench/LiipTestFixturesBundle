@@ -20,6 +20,9 @@ use Liip\TestFixturesBundle\Test\FixturesTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
+ *
  * @IgnoreAnnotation("depends")
  */
 class WebTestCaseTest extends WebTestCase
